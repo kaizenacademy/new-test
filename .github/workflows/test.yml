@@ -1,9 +1,28 @@
 name: Test
 on:
-  push:
-    branches: [ "main" ]
-
   workflow_dispatch:
+    inputs:
+      action:
+        description: 'Terraform action to perform'
+        required: true
+        default: 'apply'
+        type: choice
+        options:
+          - apply
+          - destroy
+      region:
+        description: 'Provide region'
+        required: true
+        default: 'us-east-1'
+
+      ami_id:
+        description: 'Enter ami id'
+        required: true
+
+      instance_type:
+        description: 'Provide instance type'
+        required: true
+        default: 't2.micro'
 
 jobs:
   deploy:
@@ -17,8 +36,13 @@ jobs:
       with:
         terraform_version: "1.12.2"
 
-    - name: Init
-      run: terraform init
+    - name: Create tfvars file
+      run: |
+        cat <<EOF > terraform.tfvars
+        ami_id = "${{ inputs.ami_id }}"
+        instance_type = "${{ inputs.instance_type }}"
+        region = "${{ inputs.region }}"
+        EOF
 
     - name: Configure AWS Credentials
       uses: aws-actions/configure-aws-credentials@v4.3.1
@@ -27,5 +51,13 @@ jobs:
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         aws-region: us-east-2
 
-    - name: Apply
-      run: terraform destroy -auto-approve
+    - name: Init
+      run: terraform init
+
+    - name: Terraform Action
+      run: |
+        if [[ "${{ inputs.action }}" == "apply" ]]; then
+          terraform apply -auto-approve
+        else
+          terraform destroy -auto-approve
+        fi
