@@ -16,6 +16,6 @@ terraform {
   backend "s3" {
     bucket = "adilet-bucket"
     key    = "terraform.tfvars"
-    region = "us-east-w"
+    region = "us-east-2"
   }
 }
